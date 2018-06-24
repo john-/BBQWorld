@@ -1,0 +1,1 @@
+An attempt at a temperature controller for a bbq grill.   Dependencies included computer with GPIO, thermocouple temperature sensor boards.  Also requires a fan and air valve controllable via PWM.
