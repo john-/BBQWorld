@@ -5,9 +5,10 @@ use warnings;
 
 use BBQWorld::Model::PID;
 use BBQWorld::Model::Temps;
+use BBQWorld::Model::AirIntake;
 #use BBQWorld::Model::LCD;
-use BBQWorld::Model::Fan;
-use BBQWorld::Model::Valve;
+#use BBQWorld::Model::Fan;
+#use BBQWorld::Model::Valve;
 
 use Data::Dumper;
 
@@ -27,14 +28,16 @@ sub new {
     );
 
     $self->{pid} = BBQWorld::Model::PID->new( $config->{pid} );
-    $self->{fan} = BBQWorld::Model::Fan->new;
-    $self->{valve} = BBQWorld::Model::Valve->new;
+    $self->{air_intake} = BBQWorld::Model::AirIntake->new;
+    #$self->{fan} = BBQWorld::Model::Fan->new;
+    #$self->{valve} = BBQWorld::Model::Valve->new;
 
     Mojo::IOLoop->recurring(
         4 => sub {
             my $res = $self->{pid}->calc_pid( $self->{temps}->get_ambient );
-            $self->{fan}->set_speed( $res->{CO} );
-            $self->{valve}->set_state( $res->{CO} );
+            $self->{air_intake}->set_volume( $res->{CO} );
+            #$self->{fan}->set_speed( $res->{CO} );
+            #$self->{valve}->set_state( $res->{CO} );
         }
     );
 

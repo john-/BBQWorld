@@ -37,7 +37,7 @@ sub init_pwm {
 }
 
 sub set_state {
-    my ( $self, $state ) = @_;
+    my ( $self, $state, $threshold ) = @_;
 
     unless ( $state =~ /^[+-]?(?=\.?\d)\d*\.?\d*(?:e[+-]?\d+)?\z/i ) {
         print "not a number: $state\n";
@@ -45,19 +45,19 @@ sub set_state {
     }
 
     # map to pwm range
-    my $duty = $self->map_to_duty( $state, 1, 1000, MIN, MAX );
+    my $duty = $self->map_to_duty( $state, 0, $threshold, MIN, MAX );
 
     # limit to
 
     $duty = sprintf( '%.0f', $duty );
 
     # when I want to utlize fan as variable control use this
-#    if ( $duty > MAX ) { $duty = MAX }
-#    if ( $duty < MIN ) { $duty = MIN   }
+    if ( $duty > MAX ) { $duty = MAX }
+    if ( $duty < MIN ) { $duty = MIN   }
 
     # for initial working with setup make it open or closed
-    if ( $duty >= MIN ) { $duty = MAX }
-    if ( $duty < MIN ) { $duty = MIN   }
+#    if ( $duty >= MIN ) { $duty = MAX }
+#    if ( $duty < MIN ) { $duty = MIN   }
 
     print "state: $state duty: $duty\n";
 

@@ -37,17 +37,17 @@ sub init_pwm {
 }
 
 sub set_speed {
-    my ( $self, $speed ) = @_;
+    my ( $self, $speed, $threshold ) = @_;
 
     unless ( $speed =~ /^[+-]?(?=\.?\d)\d*\.?\d*(?:e[+-]?\d+)?\z/i ) {
         print "not a number: $speed\n";
         return;
     }
 
+    if ($speed lt $threshold) { $speed = -100 }
+    
     # map to pwm range
-    my $duty = $self->map_to_duty( $speed, 1, 1000, MIN, MAX );
-
-    # limit to
+    my $duty = $self->map_to_duty( $speed, 0, 100, MIN, MAX );
 
     $duty = sprintf( '%.0f', $duty );
 
