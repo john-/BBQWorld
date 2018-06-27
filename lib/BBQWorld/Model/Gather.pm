@@ -3,12 +3,13 @@ package BBQWorld::Model::Gather;
 use strict;
 use warnings;
 
+use Mojo::Log;
+use FindBin;
+
 use BBQWorld::Model::PID;
 use BBQWorld::Model::Temps;
-use BBQWorld::Model::AirIntake;
-#use BBQWorld::Model::LCD;
-#use BBQWorld::Model::Fan;
-#use BBQWorld::Model::Valve;
+#use BBQWorld::Model::AirIntake;
+use BBQWorld::Model::AirDevice;
 
 use Data::Dumper;
 
@@ -21,34 +22,31 @@ sub new {
 
     $self->{temps} = BBQWorld::Model::Temps->new( $config->{probes} );
 
-    Mojo::IOLoop->recurring(
-        1 => sub {
-            $self->{temps}->cache_temps();
-        }
-    );
+    $self->{log} = Mojo::Log->new(path => "$FindBin::Bin/../log/bbqworld.log");
+
+#    Mojo::IOLoop->recurring(
+#        1 => sub {
+#            $self->{temps}->cache_temps();
+#        }
+#    );
 
     $self->{pid} = BBQWorld::Model::PID->new( $config->{pid} );
-    $self->{air_intake} = BBQWorld::Model::AirIntake->new;
-    #$self->{fan} = BBQWorld::Model::Fan->new;
-    #$self->{valve} = BBQWorld::Model::Valve->new;
+    $self->{fan} = BBQWorld::Model::AirDevice->new( $config->{air_devices}{fan}, $self->{log} );
+    $self->{valve} = BBQWorld::Model::AirDevice->new( $config->{air_devices}{valve}, $self->{log} );
+    #print Dumper($config->{air_devices}{fan});
+#    $self->{air_intake} = BBQWorld::Model::AirIntake->new;
 
     Mojo::IOLoop->recurring(
-        4 => sub {
-            my $res = $self->{pid}->calc_pid( $self->{temps}->get_ambient );
-            $self->{air_intake}->set_volume( $res->{CO} );
-            #$self->{fan}->set_speed( $res->{CO} );
-            #$self->{valve}->set_state( $res->{CO} );
+        $config->{pid}{sampletime} => sub {
+	    my $res;
+	    $res->{temps}   = $self->{temps}->get_temps;
+            $res->{pid}     = $self->{pid}->calc_pid( $res->{temps} );
+            $res->{intake}{fan}     = $self->{fan}->set_speed( $res->{pid}{CO} );
+            $res->{intake}{valve}   = $self->{valve}->set_speed( $res->{pid}{CO} );
+	    $self->{log}->info( Dumper($res) );
+#            $res->{intakes} = $self->{air_intake}->set_volume( $res->{values}{CO} );
         }
     );
-
- #   $self->{LCD} = BBQWorld::Model::LCD->new();
-
- #   Mojo::IOLoop->recurring(
- #       1 => sub {
- #           $self->{LCD}->update_lcd( $self->{temps}->get_temps,
- #               $self->{pid}->get_values );
- #       }
- #   );
 
     return $self;
 }

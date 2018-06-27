@@ -32,8 +32,10 @@ sub new {
 }
 
 sub calc_pid {
-    my ( $self, $PV ) = @_;
+    my ( $self, $temps ) = @_;
 
+    my $PV = $temps->{ambient};
+    
     my $now        = time();
     my $time_delta = $now - $self->{prev_time};
     if ( $time_delta < $self->{sampletime} ) {
@@ -51,8 +53,8 @@ sub calc_pid {
 
     my $total = $P + $I + $D;
 
-    print sprintf( "PV:%.0f P:%.0f I:%.0f D:%.0f CO:%.0f\n",
-        $PV, $P, $I, $D, $total );
+    #print sprintf( "PV:%.0f P:%.0f I:%.0f D:%.0f CO:%.0f\n",
+    #    $PV, $P, $I, $D, $total );
 
     $self->{prev_error} = $error;
     $self->{prev_time}  = $now;
@@ -68,7 +70,7 @@ sub calc_pid {
 
     $self->{values} = \%res;
 
-    return \%res;
+    return $self->{values};
 }
 
 sub get_values {

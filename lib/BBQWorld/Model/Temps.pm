@@ -16,7 +16,7 @@ sub new {
     return $self;
 }
 
-sub cache_temps {
+sub get_temps {
     my $self = shift;
 
     my %temps;
@@ -28,6 +28,7 @@ sub cache_temps {
         my (@lines) = <MYINPUTFILE>;    # read file into list
 
         my $temp;
+        $temps{$sensor} = 'Not available';    # assume worst case
         foreach my $line (@lines) {
 
             #print "line $count:$_\n";
@@ -39,19 +40,19 @@ sub cache_temps {
         close(MYINPUTFILE);
     }
 
-    $self->{temps} = \%temps;
+    return \%temps;
 }
 
-sub get_ambient {
-    my $self = shift;
+#sub get_ambient {
+#    my $self = shift;
 
-    return $self->{temps}{ambient};
-}
+#    return $self->{temps}{ambient};
+#}
 
-sub get_temps {
-    my $self = shift;
+#sub get_temps {
+#    my $self = shift;
 
-    return $self->{temps};
-}
+#    return $self->{temps};
+#}
 
 1;
