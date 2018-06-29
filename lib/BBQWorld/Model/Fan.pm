@@ -1,5 +1,8 @@
 package BBQWorld::Model::Fan;
 
+use Mojo::Log;
+use FindBin;
+
 use Data::Dumper;
 use Carp;
 
@@ -11,8 +14,11 @@ use constant {
 sub new {
     my $class = shift;
 
+    my $log = Mojo::Log->new(path => "$FindBin::Bin/../log/bbqworld.log");
+    
     my $self = {
-
+#        fan_dev => '/sys/devices/platform/pwm-ctrl',
+	log => $log,
     };
 
     bless $self, $class;
@@ -22,25 +28,28 @@ sub new {
     return $self;
 }
 
+sub _set_pwm {
+    my ($self, $prop, $value) = @_;
+
+    my @args = ( sprintf( '/bin/echo %d > /sys/devices/platform/pwm-ctrl/%s', $value, $prop) );
+    system(@args) == 0
+      or $self->{log}->error("system @args failed: $?");
+    
+}
+
 sub init_pwm {
+    my $self = shift;
 
-    #my $self = shift;
+    $self->_set_pwm('freq1', 25000);
 
-    my @args = ('/bin/echo 25000 > /sys/devices/platform/pwm-ctrl/freq1');
-    system(@args) == 0
-      or die "system @args failed: $?";
-
-    my @args = ('/bin/echo 1 > /sys/devices/platform/pwm-ctrl/enable1');
-    system(@args) == 0
-      or die "system @args failed: $?";
-
+    $self->_set_pwm('enable1', 1);
 }
 
 sub set_speed {
     my ( $self, $speed, $threshold ) = @_;
 
     unless ( $speed =~ /^[+-]?(?=\.?\d)\d*\.?\d*(?:e[+-]?\d+)?\z/i ) {
-        print "not a number: $speed\n";
+        $self->{log}->error("not a number: $speed");
         return;
     }
 
@@ -54,12 +63,9 @@ sub set_speed {
     if ( $duty > MAX ) { $duty = MAX }
     if ( $duty < MIN ) { $duty = 0   }
 
-    print "speed: $speed duty: $duty\n";
+    $self->{log}->info("speed: $speed duty: $duty");
 
-    my @args = ("/bin/echo $duty > /sys/devices/platform/pwm-ctrl/duty1");
-    system(@args) == 0
-        or die "system @args failed: $?";
-
+    $self->_set_pwm('duty1', $duty);
 }
 
 sub map_to_duty {

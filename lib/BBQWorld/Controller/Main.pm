@@ -18,7 +18,7 @@ sub status {
     $c->log->info('Starting Websocket');
     
 #    $c->send({json => $c->gather->stats});
-    my $id = Mojo::IOLoop->recurring(4 => sub {
+    my $id = Mojo::IOLoop->recurring($c->config->{pid}{sampletime} => sub {
 	my $loop = shift;
         $c->send({json => $c->gather->stats});
 				     });
