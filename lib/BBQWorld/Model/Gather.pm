@@ -3,8 +3,8 @@ package BBQWorld::Model::Gather;
 use strict;
 use warnings;
 
-use Mojo::Log;
-use FindBin;
+#use Mojo::Log;
+#use FindBin;
 
 use BBQWorld::Model::PID;
 use BBQWorld::Model::Temps;
@@ -16,13 +16,14 @@ use Data::Dumper;
 use Mojo::IOLoop;
 
 sub new {
-    my ( $class, $config ) = @_;
+    my ( $class, $config, $log ) = @_;
 
     my $self = bless {}, $class;
 
     $self->{temps} = BBQWorld::Model::Temps->new( $config->{probes} );
 
-    $self->{log} = Mojo::Log->new(path => "$FindBin::Bin/../log/bbqworld.log");
+    $self->{log} = $log;
+    #$self->{log} = Mojo::Log->new(path => "$FindBin::Bin/../log/bbqworld.log");
 
 #    Mojo::IOLoop->recurring(
 #        1 => sub {
@@ -43,12 +44,19 @@ sub new {
             $res->{pid}     = $self->{pid}->calc_pid( $res->{temps} );
             $res->{intake}{fan}     = $self->{fan}->set_speed( $res->{pid}{CO} );
             $res->{intake}{valve}   = $self->{valve}->set_speed( $res->{pid}{CO} );
-	    $self->{log}->info( Dumper($res) );
+	    $self->{stats} = $res;
+#	    $self->{log}->info( Dumper($res) );
 #            $res->{intakes} = $self->{air_intake}->set_volume( $res->{values}{CO} );
         }
     );
 
     return $self;
+}
+
+sub stats {
+    my $self = shift;
+
+    return $self->{stats};
 }
 
 1;

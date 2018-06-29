@@ -1,0 +1,81 @@
+% layout 'default';
+% title 'Welcome';
+<h2><%= $msg %></h2>
+
+<canvas id="mycanvas" width="1000" height="200"></canvas>
+
+<style>
+  table {
+    empty-cells: show;
+    border: 1px solid #000;
+  }
+
+  table td,
+  table th {
+    min-width: 2em;
+    min-height: 2em;
+    border: 1px solid #000;
+  }
+</style>
+
+<table id="mystatus">
+    <thead>
+      <tr>
+	<th colspan="4">PID</th>
+	<th colspan="2">Temps</th>
+	<th colspan="2">Intake</th>
+      </tr>
+      <tr>
+	<th>P</th>
+	<th>I</th>
+	<th>D</th>
+	<th>CO</th>
+	<th>Ambient</th>
+	<th>Internal</th>
+	<th>Valve</th>
+	<th>Fan</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<script
+  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous">
+</script>
+
+<script type="text/javascript" src="smoothie.js"></script>
+
+<script>
+  var ws = new WebSocket('<%= url_for('status')->to_abs %>');
+  ws.onmessage = function (event) {
+    $("#mystatus tbody")
+    .prepend('<tr><td>' + JSON.parse(event.data).pid.P + '</td>' +
+                 '<td>' + JSON.parse(event.data).pid.I + '</td>' +
+                 '<td>' + JSON.parse(event.data).pid.D + '</td>' +
+                 '<td>' + JSON.parse(event.data).pid.CO + '</td>' +
+                 '<td>' + JSON.parse(event.data).temps.ambient + '</td>' +
+                 '<td>' + JSON.parse(event.data).temps.internal + '</td>' +
+                 '<td>' + JSON.parse(event.data).intake.valve.duty + '</td>' +
+                 '<td>' + JSON.parse(event.data).intake.fan.duty + '</td>'
+    );
+    //document.body.innerHTML += JSON.stringify(event.data);
+//    P.append(new Date().getTime(), JSON.parse(event.data).pid.P);
+    I.append(new Date().getTime(), JSON.parse(event.data).pid.I);
+  };
+
+  //ws.onopen = function (event) {
+  //  ws.send(JSON.stringify({msg: 'I ♥ Mojolicious!'}));
+  //      };
+
+    var smoothie = new SmoothieChart();
+    smoothie.streamTo(document.getElementById("mycanvas"));
+
+//    var P = new TimeSeries();
+    var I = new TimeSeries();
+
+//    smoothie.addTimeSeries(P);
+    smoothie.addTimeSeries(I);
+</script>
