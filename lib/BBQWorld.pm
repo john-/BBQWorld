@@ -13,26 +13,34 @@ sub startup {
     # Load configuration from hash returned by "my_app.conf"
     $self->{config} = $self->plugin('Config');
 
-    $self->{log} = Mojo::Log->new(path => "$FindBin::Bin/../log/bbqworld.log");
+    $self->{log} =
+      Mojo::Log->new( path => "$FindBin::Bin/../log/bbqworld.log" );
 
     #  state $gather = BBQWorld::Model::Gather->new;
-    $self->{gather} = BBQWorld::Model::Gather->new( $self->{config}, $self->{log} );
+    $self->{gather} =
+      BBQWorld::Model::Gather->new( $self->{config}, $self->{log} );
 
-    $self->helper(gather => sub {
-	my $c = shift;
-	return $self->{gather};
-    });
+    $self->helper(
+        gather => sub {
+            my $c = shift;
+            return $self->{gather};
+        }
+    );
 
-    $self->helper(log => sub {
-	my $c = shift;
-	return $self->{log};
-    });
+    $self->helper(
+        log => sub {
+            my $c = shift;
+            return $self->{log};
+        }
+    );
 
-    $self->helper(config => sub {
-	my $c = shift;
-	return $self->{config};
-    });
-    
+    $self->helper(
+        config => sub {
+            my $c = shift;
+            return $self->{config};
+        }
+    );
+
     # Documentation browser under "/perldoc"
     #$self->plugin('PODRenderer') if $config->{perldoc};
 

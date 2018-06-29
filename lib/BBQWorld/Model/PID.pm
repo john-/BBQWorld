@@ -35,7 +35,7 @@ sub calc_pid {
     my ( $self, $temps ) = @_;
 
     my $PV = $temps->{ambient};
-    
+
     my $now        = time();
     my $time_delta = $now - $self->{prev_time};
     if ( $time_delta < $self->{sampletime} ) {
