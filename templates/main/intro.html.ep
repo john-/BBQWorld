@@ -18,7 +18,7 @@
   }
 </style>
 
-<table id="mystatus">
+<table id="status">
     <thead>
       <tr>
 	<th colspan="4">PID</th>
@@ -51,24 +51,21 @@
 <script>
   var ws = new WebSocket('<%= url_for('status')->to_abs %>');
   ws.onmessage = function (event) {
-    $("#mystatus tbody")
-    .prepend('<tr><td>' + JSON.parse(event.data).pid.P + '</td>' +
-                 '<td>' + JSON.parse(event.data).pid.I + '</td>' +
-                 '<td>' + JSON.parse(event.data).pid.D + '</td>' +
-                 '<td>' + JSON.parse(event.data).pid.CO + '</td>' +
-                 '<td>' + JSON.parse(event.data).temps.ambient + '</td>' +
-                 '<td>' + JSON.parse(event.data).temps.internal + '</td>' +
-                 '<td>' + JSON.parse(event.data).intake.valve.duty + '</td>' +
-                 '<td>' + JSON.parse(event.data).intake.fan.duty + '</td>'
+    var stats = JSON.parse(event.data);
+    $("#status tbody")
+    .prepend('<tr><td>' + stats.pid.P + '</td>' +
+                 '<td>' + stats.pid.I + '</td>' +
+                 '<td>' + stats.pid.D + '</td>' +
+                 '<td>' + stats.pid.CO + '</td>' +
+                 '<td>' + stats.temps.ambient + '</td>' +
+                 '<td>' + stats.temps.internal + '</td>' +
+                 '<td>' + stats.intake.valve.duty + '</td>' +
+                 '<td>' + stats.intake.fan.duty + '</td>'
     );
-    //document.body.innerHTML += JSON.stringify(event.data);
-//    P.append(new Date().getTime(), JSON.parse(event.data).pid.P);
-    I.append(new Date().getTime(), JSON.parse(event.data).pid.I);
-  };
 
-  //ws.onopen = function (event) {
-  //  ws.send(JSON.stringify({msg: 'I ♥ Mojolicious!'}));
-  //      };
+//    P.append(new Date().getTime(), stats.pid.P);
+    I.append(new Date().getTime(), stats.pid.I);
+  };
 
     var smoothie = new SmoothieChart();
     smoothie.streamTo(document.getElementById("mycanvas"));
