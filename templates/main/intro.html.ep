@@ -2,7 +2,7 @@
 % title 'Welcome';
 <h2><%= $msg %></h2>
 
-<canvas id="mycanvas" width="1000" height="200"></canvas>
+<canvas id="statscanvas" width="1000" height="200"></canvas>
 
 <style>
   table {
@@ -49,6 +49,19 @@
 <script type="text/javascript" src="smoothie.js"></script>
 
 <script>
+
+  var smoothie = new SmoothieChart();
+  smoothie.streamTo(document.getElementById("statscanvas"));
+
+  var CO      = new TimeSeries();
+  var ambient = new TimeSeries();
+  var setpoint = new TimeSeries();
+
+  smoothie.addTimeSeries(CO);
+  smoothie.addTimeSeries(ambient);
+  smoothie.addTimeSeries(setpoint);
+
+
   var ws = new WebSocket('<%= url_for('status')->to_abs %>');
   ws.onmessage = function (event) {
     var stats = JSON.parse(event.data);
@@ -63,16 +76,9 @@
                  '<td>' + stats.intake.fan.duty + '</td>'
     );
 
-//    P.append(new Date().getTime(), stats.pid.P);
-    I.append(new Date().getTime(), stats.pid.I);
+    CO.append(new Date().getTime(), stats.pid.CO);
+    ambient.append(new Date().getTime(), stats.temps.ambient);
+    setpoint.append(new Date().getTime(), stats.pid.SP);
   };
 
-    var smoothie = new SmoothieChart();
-    smoothie.streamTo(document.getElementById("mycanvas"));
-
-//    var P = new TimeSeries();
-    var I = new TimeSeries();
-
-//    smoothie.addTimeSeries(P);
-    smoothie.addTimeSeries(I);
 </script>
