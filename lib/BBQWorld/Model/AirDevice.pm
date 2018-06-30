@@ -70,7 +70,12 @@ sub set_speed {
     if ( $duty < $duty_min ) { $duty = $duty_min }
 
     # a device may kick in at certain levels only
-    if ( $co lt $self->{props}{co_min} ) { $duty = $self->{props}{duty_off} }
+    if ( $co < $self->{props}{co_min} ) {
+	$self->{log}->info(
+            sprintf('turning off the intake device.  co: %.2f  co_min: %.2f',
+            $co, $self->{props}{co_min}));
+        $duty = $self->{props}{duty_off};
+    }
 
     $self->{log}->info("co: $co duty: $duty");
 

@@ -66,12 +66,12 @@
   ws.onmessage = function (event) {
     var stats = JSON.parse(event.data);
     $("#status tbody")
-    .prepend('<tr><td>' + stats.pid.P + '</td>' +
-                 '<td>' + stats.pid.I + '</td>' +
-                 '<td>' + stats.pid.D + '</td>' +
-                 '<td>' + stats.pid.CO + '</td>' +
-                 '<td>' + stats.temps.ambient + '</td>' +
-                 '<td>' + stats.temps.internal + '</td>' +
+    .prepend('<tr><td>' + stats.pid.P.toFixed(2) + '</td>' +
+                 '<td>' + stats.pid.I.toFixed(2) + '</td>' +
+                 '<td>' + stats.pid.D.toFixed(2) + '</td>' +
+                 '<td>' + stats.pid.CO.toFixed(2) + '</td>' +
+                 '<td>' + stats.temps.ambient.toFixed(2) + '</td>' +
+                 '<td>' + stats.temps.internal.toFixed(2) + '</td>' +
                  '<td>' + stats.intake.valve.duty + '</td>' +
                  '<td>' + stats.intake.fan.duty + '</td>'
     );
