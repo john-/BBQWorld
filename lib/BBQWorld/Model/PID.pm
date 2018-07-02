@@ -3,6 +3,11 @@ package BBQWorld::Model::PID;
 use Data::Dumper;
 use Carp;
 
+#use contant {
+#    AUTOMATIC = 1,
+#    MANUAL = 0,
+#}
+
 sub new {
     my ( $class, $args ) = @_;
 
@@ -14,57 +19,154 @@ sub new {
       and defined $args->{sampletime};
 
     my $self = {
-        gains => {
-            Kp => $args->{Kp},
-            Ki => $args->{Ki} * $args->{sampletime},
-            Kd => $args->{Kd} / $args->{sampletime},
-        },
-        setpoint    => $args->{setpoint},
-        sampletime  => $args->{sampletime},
+        setpoint  => $args->{setpoint},
+	in_auto => 0,  # start out in manual mode
+	sampletime => $args->{sampletime},
         prev_time   => time(),
-        prev_error  => 0,
-        total_error => 0,
+
+#        gains => {
+#            Kp => $args->{Kp},
+#            Ki => $args->{Ki} * $args->{sampletime},
+#            Kd => $args->{Kd} / $args->{sampletime},
+#        },
+        #sampletime  => $args->{sampletime},
+#        prev_error  => 0,   # these two will come from new initialize sub?
+#        total_error => 0,
     };
 
     bless $self, $class;
 
+    $self->set_output_limits(0, 1023);  # set to Odroid C2 PWM limits
+    $self->set_tunings($args->{Kp}, $args->{Ki}, $args->{Kd}, $args->{POn});
+
     return $self;
+}
+
+sub set_output_limits {
+    my ($self, $min, $max) = @_;
+
+    if ($min >= $max) { return; }
+
+    $self->{out_min} = $min;
+    $self->{out_max} = $max;
+
+    if ($self->{in_auto}) {
+	if ($self->{output} > $self->{out_max}) { $self->{output} = $self->{out_max}
+	} elsif ($self->{output} < $self->{out_min}) { $self->{output} = $self->{out_min} }
+
+	if ($self->{output_sum} > $self->{out_max}) { $self->{output_sum} = $self->{out_max}
+	} elsif ($self->{output_sum} < $self->{out_min}) { $self->{output_sum} = $self->{out_min} }
+    }
+}
+
+sub set_tunings {
+    my ($self, $Kp, $Ki, $Kd, $POn) = @_;
+
+    if ( ($Kp < 0) || ($Ki < 0) || ($Kd < 0) ) { return; }
+
+    $self->{POn} = $POn;
+
+    $self->{gains}{disp_Kp} = $Kp;
+    $self->{gains}{disp_Ki} = $Ki;
+    $self->{gains}{disp_Kd} = $Kd;
+
+    $self->{gains}{Kp} = $Kp;
+    $self->{gains}{Ki} = $Ki * $self->{sampletime};
+    $self->{gains}{Kd} = $Kd / $self->{sampletime};
+}
+
+sub set_mode {
+    my ($self, $mode) = @_;
+
+    my $new_auto = 0;;
+    if ($mode == 1) { $new_auto = 1 }
+
+    if ($new_auto && !$self->{in_auto}) {
+	$self->initialize;
+    }
+
+    $self->{in_auto} = $new_auto;
+}
+
+# does all the things that need to happen to ensure a bumpless transfer
+# from manual to automatic mode.
+sub initialize {
+    my $self = shift;
+
+    $self->{output_sum} = $self->{output};
+    $self->{last_input} = $self->{input};
+
+    if ($self->{output_sum} > $self->{out_max}) { $self->{output_sum} = $self->{out_max}
+    } elsif ($self->{output_sum} < $self->{out_min}) { $self->{output_sum} = $self->{out_min} }					       
 }
 
 sub calc_pid {
     my ( $self, $temps ) = @_;
 
-    my $PV = $temps->{ambient};
-
+    if (!$self->{in_auto}) { return; }
+    
     my $now        = time();
     my $time_delta = $now - $self->{prev_time};
     if ( $time_delta < $self->{sampletime} ) {
         return;
     }
 
-    my $error = $self->{setpoint} - $PV;
+    my $input = $temps->{ambient};
+    my $error = $self->{setpoint} - $input;
+    my $dInput = $input - $self->{prev_input};
+    $self->{output_sum} += $self->{gains}{Ki} * $error;   # I
 
-    $self->{total_error} += $error;
-    my $deriv_of_error = $error - $self->{prev_error};
+    # Add Proportional on Measurement, if P_ON_M is specified
+    if ($self->{POn} eq 'p_on_m') {
+        $self->{output_sum} -= $self->{gains}{kp} * dInput;
+    }
 
-    my $P = $error * $self->{gains}{Kp};
-    my $I = $self->{total_error} * $self->{gains}{Ki};
-    my $D = $deriv_of_error * $self->{gains}{Kd};
+    if ( $self->{output_sum} > $self->{out_max} ) { $self->{output_sum} = $self->{out_max};
+    } elsif ( $self->{output_sum} < $self->{out_min} ) { $self->{output_sum} = $self->{out_min}; }
 
-    my $total = $P + $I + $D;
+    # Add Proportional on Error, if P_ON_E is specified
+    my $output;
+    if ($self->{POn} eq 'p_on_e') {
+        $output = $self->{gains}{Kp} * $error;
+    } else {
+        $output = 0;
+    }
 
-    #print sprintf( "PV:%.0f P:%.0f I:%.0f D:%.0f CO:%.0f\n",
-    #    $PV, $P, $I, $D, $total );
+    # Compute Rest of PID Output
+    my $P = $output;   # save this to provide it later
+    my $D = $self->{gains}{kd} * $dInput;
+    $output += $self->{output_sum} - $D;
 
-    $self->{prev_error} = $error;
+    if ($output > $self->{out_max}) {
+	$output = $self->{out_max};
+    } elsif ($output < $self->{out_min}) {
+	$output = $self->{out_min};
+    }
+
+    $self->{output} = $output;
+
+    #$self->{total_error} += $error;
+    #my $deriv_of_error = $error - $self->{prev_error};
+
+    #my $P = $error * $self->{gains}{Kp};
+    #my $I = $self->{total_error} * $self->{gains}{Ki};
+    #my $D = $deriv_of_error * $self->{gains}{Kd};
+
+    #my $total = $P + $I + $D;
+
+    #print sprintf( "input:%.0f P:%.0f I:%.0f D:%.0f CO:%.0f\n",
+    #    $input, $P, $I, $D, $total );
+
+#    $self->{prev_error} = $error;
+    $self->{prev_input} = $input;
     $self->{prev_time}  = $now;
 
     my %res = (
-        PV => $PV,
+        PV => $input,
         P  => $P,
-        I  => $I,
+        I  => $self->{output_sum},
         D  => $D,
-        CO => $total,
+        CO => $output,
         SP => $self->{setpoint}
     );
 

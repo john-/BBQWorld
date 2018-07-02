@@ -34,6 +34,8 @@ sub new {
     #    );
 
     $self->{pid} = BBQWorld::Model::PID->new( $config->{pid} );
+    $self->{pid}->set_mode(1); # turn the PID on
+    
     $self->{fan} = BBQWorld::Model::AirDevice->new( $config->{air_devices}{fan},
         $self->{log} );
     $self->{valve} =
@@ -48,6 +50,8 @@ sub new {
             my $res;
             $res->{temps}       = $self->{temps}->get_temps;
             $res->{pid}         = $self->{pid}->calc_pid( $res->{temps} );
+	    return unless $res->{pid}{CO}; # probably in manual mode
+	    
             $res->{intake}{fan} = $self->{fan}->set_speed( $res->{pid}{CO} );
             $res->{intake}{valve} =
               $self->{valve}->set_speed( $res->{pid}{CO} );
