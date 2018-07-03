@@ -34,7 +34,10 @@ sub new {
     #    );
 
     $self->{pid} = BBQWorld::Model::PID->new( $config->{pid} );
-    $self->{pid}->set_mode(1); # turn the PID on
+
+    my $temps = $self->{temps}->get_temps;   # prime the pump
+
+    $self->{pid}->set_mode(1, $temps->{ambient}, 0); # turn the PID on
     
     $self->{fan} = BBQWorld::Model::AirDevice->new( $config->{air_devices}{fan},
         $self->{log} );
@@ -48,13 +51,17 @@ sub new {
     Mojo::IOLoop->recurring(
         $config->{pid}{sampletime} => sub {
             my $res;
-            $res->{temps}       = $self->{temps}->get_temps;
-            $res->{pid}         = $self->{pid}->calc_pid( $res->{temps} );
-	    return unless $res->{pid}{CO}; # probably in manual mode
+            $res->{temps} = $self->{temps}->get_temps;
+            my $out = $self->{pid}->calc_pid( $res->{temps} );
+	    if ($out) {
+		$res->{pid} = $out;
+	    } else {
+		return;   # probably in manual mode
+	    }
 	    
-            $res->{intake}{fan} = $self->{fan}->set_speed( $res->{pid}{CO} );
+            $res->{intake}{fan} = $self->{fan}->set_speed( $res->{pid}{Output} );
             $res->{intake}{valve} =
-              $self->{valve}->set_speed( $res->{pid}{CO} );
+              $self->{valve}->set_speed( $res->{pid}{Output} );
             $self->{stats} = $res;
 
 #	    $self->{log}->info( Dumper($res) );

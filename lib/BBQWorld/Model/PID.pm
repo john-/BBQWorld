@@ -22,7 +22,7 @@ sub new {
         setpoint  => $args->{setpoint},
 	in_auto => 0,  # start out in manual mode
 	sampletime => $args->{sampletime},
-        prev_time   => time(),
+        last_time   => time(),
 
 #        gains => {
 #            Kp => $args->{Kp},
@@ -76,13 +76,13 @@ sub set_tunings {
 }
 
 sub set_mode {
-    my ($self, $mode) = @_;
+    my ($self, $mode, $input, $output) = @_;
 
-    my $new_auto = 0;;
+    my $new_auto = 0;
     if ($mode == 1) { $new_auto = 1 }
 
     if ($new_auto && !$self->{in_auto}) {
-	$self->initialize;
+	$self->initialize($input, $output);
     }
 
     $self->{in_auto} = $new_auto;
@@ -91,10 +91,10 @@ sub set_mode {
 # does all the things that need to happen to ensure a bumpless transfer
 # from manual to automatic mode.
 sub initialize {
-    my $self = shift;
+    my ($self, $input, $output) = @_;
 
-    $self->{output_sum} = $self->{output};
-    $self->{last_input} = $self->{input};
+    $self->{output_sum} = $output;
+    $self->{last_input} = $input;
 
     if ($self->{output_sum} > $self->{out_max}) { $self->{output_sum} = $self->{out_max}
     } elsif ($self->{output_sum} < $self->{out_min}) { $self->{output_sum} = $self->{out_min} }					       
@@ -106,14 +106,14 @@ sub calc_pid {
     if (!$self->{in_auto}) { return; }
     
     my $now        = time();
-    my $time_delta = $now - $self->{prev_time};
+    my $time_delta = $now - $self->{last_time};
     if ( $time_delta < $self->{sampletime} ) {
         return;
     }
 
     my $input = $temps->{ambient};
     my $error = $self->{setpoint} - $input;
-    my $dInput = $input - $self->{prev_input};
+    my $dInput = $input - $self->{last_input};
     $self->{output_sum} += $self->{gains}{Ki} * $error;   # I
 
     # Add Proportional on Measurement, if P_ON_M is specified
@@ -133,7 +133,6 @@ sub calc_pid {
     }
 
     # Compute Rest of PID Output
-    my $P = $output;   # save this to provide it later
     my $D = $self->{gains}{kd} * $dInput;
     $output += $self->{output_sum} - $D;
 
@@ -143,7 +142,7 @@ sub calc_pid {
 	$output = $self->{out_min};
     }
 
-    $self->{output} = $output;
+    #$self->{output} = $output;
 
     #$self->{total_error} += $error;
     #my $deriv_of_error = $error - $self->{prev_error};
@@ -158,15 +157,15 @@ sub calc_pid {
     #    $input, $P, $I, $D, $total );
 
 #    $self->{prev_error} = $error;
-    $self->{prev_input} = $input;
-    $self->{prev_time}  = $now;
+    $self->{last_input} = $input;
+    $self->{last_time}  = $now;
 
     my %res = (
-        PV => $input,
-        P  => $P,
-        I  => $self->{output_sum},
+        Input => $input,
+        #P  => $P,
+        OutputSum  => $self->{output_sum},
         D  => $D,
-        CO => $output,
+        Output => $output,
         SP => $self->{setpoint}
     );
 
