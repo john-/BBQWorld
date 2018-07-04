@@ -52,11 +52,11 @@
   var smoothie = new SmoothieChart();
   smoothie.streamTo(document.getElementById("statscanvas"));
 
-  var Output  = new TimeSeries();
+  var output  = new TimeSeries();
   var ambient = new TimeSeries();
   var setpoint = new TimeSeries();
 
-  smoothie.addTimeSeries(Output);
+  smoothie.addTimeSeries(output);
   smoothie.addTimeSeries(ambient);
   smoothie.addTimeSeries(setpoint);
 
@@ -74,7 +74,7 @@
                  '<td>' + stats.intake.fan.duty + '</td>'
     );
 
-    CO.append(new Date().getTime(), stats.pid.Output);
+    output.append(new Date().getTime(), stats.pid.Output);
     ambient.append(new Date().getTime(), stats.temps.ambient);
     setpoint.append(new Date().getTime(), stats.pid.SP);
   };

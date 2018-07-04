@@ -118,7 +118,7 @@ sub calc_pid {
 
     # Add Proportional on Measurement, if P_ON_M is specified
     if ($self->{POn} eq 'p_on_m') {
-        $self->{output_sum} -= $self->{gains}{kp} * dInput;
+        $self->{output_sum} -= $self->{gains}{Kp} * dInput;
     }
 
     if ( $self->{output_sum} > $self->{out_max} ) { $self->{output_sum} = $self->{out_max};
@@ -133,7 +133,7 @@ sub calc_pid {
     }
 
     # Compute Rest of PID Output
-    my $D = $self->{gains}{kd} * $dInput;
+    my $D = $self->{gains}{Kd} * $dInput;
     $output += $self->{output_sum} - $D;
 
     if ($output > $self->{out_max}) {
