@@ -4,9 +4,10 @@ use Data::Dumper;
 use Carp;
 
 sub new {
-    my ( $class, $props, $log ) = @_;
+    my ( $class, $type, $props, $log ) = @_;
 
     my $self = {
+	type  => $type,
         log   => $log,
         props => $props,
     };
@@ -70,14 +71,14 @@ sub set_speed {
     if ( $duty < $duty_min ) { $duty = $duty_min }
 
     # a device may kick in at certain levels only
-    if ( $co < $self->{props}{co_min} ) {
+    if ( $co <= $self->{props}{co_min} ) {
 	$self->{log}->info(
-            sprintf('turning off the intake device.  co: %.2f  co_min: %.2f',
-            $co, $self->{props}{co_min}));
+            sprintf('turning off the %s.  co: %.2f  co_min: %.2f',
+            $self->{type}, $co, $self->{props}{co_min}));
         $duty = $self->{props}{duty_off};
     }
 
-    $self->{log}->info("co: $co duty: $duty");
+    $self->{log}->info(sprintf('%s: co: %.2f duty: %.2f', $self->{type}, $co, $duty));
 
     $self->_set_pwm( "duty$self->{props}{pwm}", $duty );
 

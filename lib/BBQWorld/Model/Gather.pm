@@ -39,10 +39,10 @@ sub new {
 
     $self->{pid}->set_mode(1, $temps->{ambient}, 0); # turn the PID on
     
-    $self->{fan} = BBQWorld::Model::AirDevice->new( $config->{air_devices}{fan},
+    $self->{fan} = BBQWorld::Model::AirDevice->new( 'fan', $config->{air_devices}{fan},
         $self->{log} );
     $self->{valve} =
-      BBQWorld::Model::AirDevice->new( $config->{air_devices}{valve},
+      BBQWorld::Model::AirDevice->new( 'valve', $config->{air_devices}{valve},
         $self->{log} );
 
     #print Dumper($config->{air_devices}{fan});
