@@ -3,11 +3,6 @@ package BBQWorld::Model::PID;
 use Data::Dumper;
 use Carp;
 
-#use contant {
-#    AUTOMATIC = 1,
-#    MANUAL = 0,
-#}
-
 sub new {
     my ( $class, $args ) = @_;
 
@@ -23,15 +18,6 @@ sub new {
 	in_auto => 0,  # start out in manual mode
 	sampletime => $args->{sampletime},
         last_time   => time(),
-
-#        gains => {
-#            Kp => $args->{Kp},
-#            Ki => $args->{Ki} * $args->{sampletime},
-#            Kd => $args->{Kd} / $args->{sampletime},
-#        },
-        #sampletime  => $args->{sampletime},
-#        prev_error  => 0,   # these two will come from new initialize sub?
-#        total_error => 0,
     };
 
     bless $self, $class;
@@ -98,7 +84,7 @@ sub initialize {
     my ($self, $input, $output) = @_;
 
     #$self->{output_sum} = $output;
-    $self->{ITerm} = $output;   # arbitraily(?) assign output to ITerm instead of PTerm
+    $self->{ITerm} = $output;   # arbitrarily(?) assign output to ITerm instead of PTerm
     $self->{PTerm} = 0;
     $self->{last_input} = $input;
 
