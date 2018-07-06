@@ -21,12 +21,13 @@
 <table id="status">
     <thead>
       <tr>
-	<th colspan="3">PID</th>
+	<th colspan="4">PID</th>
 	<th colspan="2">Temps</th>
 	<th colspan="2">Intake</th>
       </tr>
       <tr>
-	<th>OutputSum</th>
+	<th>P</th>
+	<th>I</th>
 	<th>D</th>
 	<th>Output</th>
 	<th>Ambient</th>
@@ -65,7 +66,8 @@
   ws.onmessage = function (event) {
     var stats = JSON.parse(event.data);
     $("#status tbody")
-    .prepend('<tr><td>' + stats.pid.OutputSum.toFixed(2) + '</td>' +
+    .prepend('<tr><td>' + stats.pid.P.toFixed(2) + '</td>' +
+                 '<td>' + stats.pid.I.toFixed(2) + '</td>' +
                  '<td>' + stats.pid.D.toFixed(2) + '</td>' +
                  '<td>' + stats.pid.Output.toFixed(2) + '</td>' +
                  '<td>' + stats.temps.ambient.toFixed(2) + '</td>' +

@@ -51,11 +51,15 @@ sub set_output_limits {
     $self->{out_max} = $max;
 
     if ($self->{in_auto}) {
-	if ($self->{output} > $self->{out_max}) { $self->{output} = $self->{out_max}
-	} elsif ($self->{output} < $self->{out_min}) { $self->{output} = $self->{out_min} }
+	$self->{Output} = $self->restrict( $self->{Output} );
+	#if ($self->{output} > $self->{out_max}) { $self->{output} = $self->{out_max}
+	#} elsif ($self->{output} < $self->{out_min}) { $self->{output} = $self->{out_min} }
 
-	if ($self->{output_sum} > $self->{out_max}) { $self->{output_sum} = $self->{out_max}
-	} elsif ($self->{output_sum} < $self->{out_min}) { $self->{output_sum} = $self->{out_min} }
+	$self->{PTerm} = $self->restrict( $self->{PTerm} );
+	$self->{ITerm} = $self->restrict( $self->{ITerm} );
+
+	#if ($self->{output_sum} > $self->{out_max}) { $self->{output_sum} = $self->{out_max}
+	#} elsif ($self->{output_sum} < $self->{out_min}) { $self->{output_sum} = $self->{out_min} }
     }
 }
 
@@ -93,11 +97,15 @@ sub set_mode {
 sub initialize {
     my ($self, $input, $output) = @_;
 
-    $self->{output_sum} = $output;
+    #$self->{output_sum} = $output;
+    $self->{ITerm} = $output;   # arbitraily(?) assign output to ITerm instead of PTerm
+    $self->{PTerm} = 0;
     $self->{last_input} = $input;
 
-    if ($self->{output_sum} > $self->{out_max}) { $self->{output_sum} = $self->{out_max}
-    } elsif ($self->{output_sum} < $self->{out_min}) { $self->{output_sum} = $self->{out_min} }					       
+    $self->restrict( $self->{ITerm} );
+
+    #if ($self->{output_sum} > $self->{out_max}) { $self->{output_sum} = $self->{out_max}
+    #} elsif ($self->{output_sum} < $self->{out_min}) { $self->{output_sum} = $self->{out_min} }  
 }
 
 sub calc_pid {
@@ -114,33 +122,42 @@ sub calc_pid {
     my $input = $temps->{ambient};
     my $error = $self->{setpoint} - $input;
     my $dInput = $input - $self->{last_input};
-    $self->{output_sum} += $self->{gains}{Ki} * $error;   # I
+    $self->{ITerm} += $self->{gains}{Ki} * $error;   # I
+#    $self->{output_sum} += $self->{gains}{Ki} * $error;   # I
 
     # Add Proportional on Measurement, if P_ON_M is specified
     if ($self->{POn} eq 'p_on_m') {
-        $self->{output_sum} -= $self->{gains}{Kp} * dInput;
+         $self->{PTerm} -= $self->{gains}{Kp} * dInput;
+#         $self->{output_sum} -= $self->{gains}{Kp} * dInput;
+    } else {    # p_on_e
+        $self->{PTerm} = $self->{gains}{Kp} * $error;
     }
 
-    if ( $self->{output_sum} > $self->{out_max} ) { $self->{output_sum} = $self->{out_max};
-    } elsif ( $self->{output_sum} < $self->{out_min} ) { $self->{output_sum} = $self->{out_min}; }
+    $self->{ITerm} = $self->restrict( $self->{ITerm} );
+    $self->{PTerm} = $self->restrict( $self->{PTerm} );
+
+#    if ( $self->{output_sum} > $self->{out_max} ) { $self->{output_sum} = $self->{out_max};
+#    } elsif ( $self->{output_sum} < $self->{out_min} ) { $self->{output_sum} = $self->{out_min}; }
 
     # Add Proportional on Error, if P_ON_E is specified
-    my $output;
-    if ($self->{POn} eq 'p_on_e') {
-        $output = $self->{gains}{Kp} * $error;
-    } else {
-        $output = 0;
-    }
+    #my $output;
+    #if ($self->{POn} eq 'p_on_e') {
+        #$output = $self->{gains}{Kp} * $error;
+    #} else {
+    #    $output = 0;
+    #}
 
-    # Compute Rest of PID Output
-    my $D = $self->{gains}{Kd} * $dInput;
-    $output += $self->{output_sum} - $D;
+    $self->{DTerm} = $self->{gains}{Kd} * $dInput;
+    #my $D = $self->{gains}{Kd} * $dInput;
+    #$output += $self->{output_sum} - $D;
+    $self->{Output} = $self->{PTerm} + $self->{ITerm} - $self->{DTerm};
 
-    if ($output > $self->{out_max}) {
-	$output = $self->{out_max};
-    } elsif ($output < $self->{out_min}) {
-	$output = $self->{out_min};
-    }
+    $self->{Output} = $self->restrict( $self->{Output} );
+#    if ($output > $self->{out_max}) {
+#	$output = $self->{out_max};
+#    } elsif ($output < $self->{out_min}) {
+#	$output = $self->{out_min};
+#    }
 
     #$self->{output} = $output;
 
@@ -161,17 +178,32 @@ sub calc_pid {
     $self->{last_time}  = $now;
 
     my %res = (
-        Input => $input,
+        P => $self->{PTerm},
+	I => $self->{ITerm},
+	D => $self->{DTerm},
+        #Input => $input,
         #P  => $P,
-        OutputSum  => $self->{output_sum},
-        D  => $D,
-        Output => $output,
+        #OutputSum  => $self->{output_sum},
+        #D  => $D,
+        Output => $self->{Output},
         SP => $self->{setpoint}
     );
 
     $self->{values} = \%res;
 
     return $self->{values};
+}
+
+sub restrict {
+    my ($self, $amount) = @_;
+
+    if ( $amount > $self->{out_max} ) {
+        return $self->{out_max};
+    } elsif ( $amount < $self->{out_min} ) {
+        return $self->{out_min};
+    } else {
+	return $amount;
+    }
 }
 
 sub get_values {
