@@ -5,6 +5,7 @@ use Mojo::Log;
 use FindBin;
 
 use BBQWorld::Model::Gather;
+#use BBQWorld::Model::Tester;
 
 # This method will run once at server start
 sub startup {
@@ -15,6 +16,8 @@ sub startup {
 
     $self->{log} =
       Mojo::Log->new( path => "$FindBin::Bin/../log/bbqworld.log" );
+
+    $self->{log}->info("app mode: " . $self->app->mode);
 
     #  state $gather = BBQWorld::Model::Gather->new;
     $self->{gather} =

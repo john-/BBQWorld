@@ -3,6 +3,8 @@ package BBQWorld::Model::PID;
 use Data::Dumper;
 use Carp;
 
+use Time::HiRes qw( gettimeofday );
+
 sub new {
     my ( $class, $args ) = @_;
 
@@ -95,17 +97,18 @@ sub initialize {
 }
 
 sub calc_pid {
-    my ( $self, $temps ) = @_;
+    my ( $self, $input ) = @_;
 
-    if (!$self->{in_auto}) { return; }
-    
-    my $now        = time();
+    if ( (!$self->{in_auto}) || ($input eq 'Not available') ) { return; }
+
+    my $now        = gettimeofday();
     my $time_delta = $now - $self->{last_time};
+    print "time_delta: $time_delta\n";
     if ( $time_delta < $self->{sampletime} ) {
         return;
     }
 
-    my $input = $temps->{ambient};
+    #my $input = $temps->{ambient};
     my $error = $self->{setpoint} - $input;
     my $dInput = $input - $self->{last_input};
     $self->{ITerm} += $self->{gains}{Ki} * $error;   # I
@@ -167,7 +170,7 @@ sub calc_pid {
         P => $self->{PTerm},
 	I => $self->{ITerm},
 	D => $self->{DTerm},
-        #Input => $input,
+        Input => $input,
         #P  => $P,
         #OutputSum  => $self->{output_sum},
         #D  => $D,

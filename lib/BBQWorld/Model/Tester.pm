@@ -1,4 +1,4 @@
-package BBQWorld::Model::Gather;
+package BBQWorld::Model::Tester;
 
 use strict;
 use warnings;
@@ -7,12 +7,12 @@ use warnings;
 #use FindBin;
 
 use BBQWorld::Model::PID;
-use BBQWorld::Model::Temps;
+#use BBQWorld::Model::Temps;
 
 #use BBQWorld::Model::AirIntake;
-use BBQWorld::Model::AirDevice;
+#use BBQWorld::Model::AirDevice;
 
-use Data::Dumper;
+#use Data::Dumper;
 
 use Mojo::IOLoop;
 
@@ -21,7 +21,7 @@ sub new {
 
     my $self = bless {}, $class;
 
-    $self->{temps} = BBQWorld::Model::Temps->new( $config->{probes} );
+    #$self->{temps} = BBQWorld::Model::Temps->new( $config->{probes} );
 
     $self->{log} = $log;
 
@@ -35,15 +35,15 @@ sub new {
 
     $self->{pid} = BBQWorld::Model::PID->new( $config->{pid} );
 
-    my $temps = $self->{temps}->get_temps;   # prime the pump
+    #my $temps = $self->{temps}->get_temps;   # prime the pump
 
     $self->{pid}->set_mode(1, $temps->{ambient}, 0); # turn the PID on
     
-    $self->{fan} = BBQWorld::Model::AirDevice->new( 'fan', $config->{air_devices}{fan},
-        $self->{log} );
-    $self->{valve} =
-      BBQWorld::Model::AirDevice->new( 'valve', $config->{air_devices}{valve},
-        $self->{log} );
+    #$self->{fan} = BBQWorld::Model::AirDevice->new( 'fan', $config->{air_devices}{fan},
+    #    $self->{log} );
+    #$self->{valve} =
+    #  BBQWorld::Model::AirDevice->new( 'valve', $config->{air_devices}{valve},
+    #    $self->{log} );
 
     #print Dumper($config->{air_devices}{fan});
     #    $self->{air_intake} = BBQWorld::Model::AirIntake->new;
@@ -51,7 +51,7 @@ sub new {
     Mojo::IOLoop->recurring(
         $config->{pid}{sampletime} => sub {
             my $res;
-            $res->{temps} = $self->{temps}->get_temps;
+            #$res->{temps} = $self->{temps}->get_temps;
             my $out = $self->{pid}->calc_pid( $res->{temps}{ambient} );
 	    if ($out) {
 		$res->{pid} = $out;
@@ -59,10 +59,10 @@ sub new {
 		return;   # probably in manual mode
 	    }
 	    
-            $res->{intake}{fan} = $self->{fan}->set_speed( $res->{pid}{Output} );
-            $res->{intake}{valve} =
-              $self->{valve}->set_speed( $res->{pid}{Output} );
-            $self->{stats} = $res;
+            #$res->{intake}{fan} = $self->{fan}->set_speed( $res->{pid}{Output} );
+            #$res->{intake}{valve} =
+            #  $self->{valve}->set_speed( $res->{pid}{Output} );
+            #$self->{stats} = $res;
 
 #	    $self->{log}->info( Dumper($res) );
 #            $res->{intakes} = $self->{air_intake}->set_volume( $res->{values}{CO} );
